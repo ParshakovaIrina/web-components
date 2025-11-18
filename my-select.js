@@ -4,12 +4,15 @@ class MySelect extends HTMLElement {
     #selectPopupSearch;
     #optionsBox;
 
+    #shadow;
+
     constructor() {
         super();
         console.log("Hello MySelect");
     }
 
     connectedCallback(el){
+        this.#shadow = this.attachShadow({ mode: "open" });
         this.#createTemplate();
         this.#renderOptions();
     }
@@ -17,20 +20,82 @@ class MySelect extends HTMLElement {
     #createTemplate() {
         const template = document.createElement("template");
         template.innerHTML = `
-          <button class="select-button"></button>
+            <style>
+                :host{
+                    position: relative;
+                    display: inline-block;
+                    width: 200px;
+                }
+                
+                .select-button{
+                width: 100%;
+                padding: 6px 8px;
+                background: #fff;
+                border: 1px solid #4285B4;
+                border-radius: 6px;
+                box-shadow: inset 4px 4px 6px rgba(0, 0, 0, 0.15);
+                text-align: left;
+                }
+               .select-button:hover {
+               border: 1px solid #3E5F8A;
+               }
+                
+                .select-popup{
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    background-color: #f0f8ff;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+                    border-radius: 14px;
+                    width: 100%;
+                }
+                
+                .select-popup.open{
+                    display: block;
+                }
+                .select-popup-search{
+                padding: 10px;
+                background-color: #c1dbec;
+                }
+                .select-popup-options{
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                margin: 10px;
+                gap: 4px
+                }
+            </style>
+
+          <button class="select-button">Выберите опцию</button>
 
           <div class="select-popup">
-            <input placeholder="Search..."/>
+            <div class="select-popup-search">
+                <input class="select-popup-input" placeholder="Search..."/>
+            </div>
             <div class="select-popup-options"></div>
           </div>`;
 
-        this.append(template.content.cloneNode(true));
+        this.#shadow.appendChild(template.content.cloneNode(true));
 
-        this.#selectButton = this.querySelector(".select-button");
-        this.#selectPopup = this.querySelector(".select-popup");
-        this.#selectPopupSearch = this.querySelector(".select-popup-search");
-        this.#optionsBox = this.querySelector(".select-popup-options");
+        this.#selectButton = this.#shadow.querySelector(".select-button");
+        this.#selectPopup = this.#shadow.querySelector(".select-popup");
+        this.#selectPopupSearch = this.#shadow.querySelector(".select-popup-search");
+        this.#optionsBox = this.#shadow.querySelector(".select-popup-options");
+
+        this.#selectButton.addEventListener('click', this.#togglePopupHandler);
     }
+
+
+    #togglePopup() {
+        this.#selectPopup.classList.toggle('open');
+        this.classList.toggle('open');
+    }
+
+    #togglePopupHandler = (event) => {
+        event.stopPropagation();
+        this.#togglePopup();
+    };
 
     #renderOptions() {
         const options = Array.from(this.querySelectorAll("option"));
