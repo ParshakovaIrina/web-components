@@ -5,16 +5,29 @@ class MySelect extends HTMLElement {
     #optionsBox;
 
     #shadow;
+    #searchInput;
+
+    #optionsData = [];
+    #selectedValues = new Set();
 
     constructor() {
         super();
         console.log("Hello MySelect");
+        this.value = '';
+
+        this._boundHandleOutsideClick = this.#handleOutsideClick.bind(this);
     }
 
-    connectedCallback(el){
-        this.#shadow = this.attachShadow({ mode: "open" });
+    connectedCallback() {
+        this.#shadow = this.attachShadow({mode: "open"});
         this.#createTemplate();
         this.#renderOptions();
+
+        document.addEventListener('click', this._boundHandleOutsideClick);
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('click', this._boundHandleOutsideClick);
     }
 
     #createTemplate() {
@@ -80,10 +93,13 @@ class MySelect extends HTMLElement {
 
         this.#selectButton = this.#shadow.querySelector(".select-button");
         this.#selectPopup = this.#shadow.querySelector(".select-popup");
-        this.#selectPopupSearch = this.#shadow.querySelector(".select-popup-search");
+        this.#selectPopupSearch = this.#shadow.querySelector(".select-popup-input");
         this.#optionsBox = this.#shadow.querySelector(".select-popup-options");
 
         this.#selectButton.addEventListener('click', this.#togglePopupHandler);
+
+        this.#searchInput = this.#selectPopupSearch;
+        this.#searchInput.addEventListener('input', () => this.#filterOptions());
     }
 
 
@@ -100,7 +116,7 @@ class MySelect extends HTMLElement {
     #renderOptions() {
         const options = Array.from(this.querySelectorAll("option"));
 
-        const optionsData = options.map(opt => ({
+        this.#optionsData = options.map(opt => ({
             value: opt.value,
             text: opt.textContent
         }));
@@ -114,23 +130,78 @@ class MySelect extends HTMLElement {
               </label>
              `;
 
-        optionsData.forEach(opt => {
+        this.#optionsData.forEach(opt => {
             const labelNode = document.createElement("label");
             labelNode.className = "option";
             labelNode.dataset.value = opt.value;
 
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
+            checkbox.value = opt.value;
+            checkbox.checked = this.#selectedValues.has(opt.value);
+            checkbox.addEventListener('change', () => this.#selectOption(opt.value));
+
 
             const textNode = document.createTextNode(opt.text);
 
             labelNode.appendChild(checkbox);
             labelNode.appendChild(textNode);
 
+
             this.#optionsBox.appendChild(labelNode);
         });
 
         options.forEach(opt => opt.remove());
+    }
+
+    #handleOutsideClick(event) {
+        if (!this.contains(event.target) && this.#shadow !== event.target && !this.shadowRoot.contains(event.target)) {
+            this.#selectPopup.classList.remove('open');
+        }
+    }
+
+    #filterOptions() {
+        const filterText = this.#searchInput.value.toLowerCase();
+        Array.from(this.#optionsBox.children).forEach(label => {
+            const text = label.textContent.toLowerCase();
+            label.style.display = text.includes(filterText) ? '' : 'none';
+        });
+    }
+
+    #selectOption(value) {
+        if (this.#selectedValues.has(value)) {
+            this.#selectedValues.delete(value);
+        } else {
+            this.#selectedValues.add(value);
+        }
+        this.#updateButtonText();
+        this.#updateInputs();
+        this.#updateValueProperty();
+    }
+
+    #updateInputs() {
+        const inputs = Array.from(this.#optionsBox.querySelectorAll('input'));
+        inputs.forEach(input => {
+            input.checked = this.#selectedValues.has(input.value);
+        });
+    }
+
+    #updateButtonText() {
+        if (this.#selectedValues.size === 0) {
+            this.shadowRoot.querySelector('.select-button').textContent = 'Выберите опцию';
+        } else {
+            const selectedTexts = Array.from(this.#selectedValues).map(val => {
+                const opt = this.#optionsData.find(o => o.value === val);
+                return opt ? opt.text : val;
+            });
+            this.shadowRoot.querySelector('.select-button').textContent = selectedTexts.join(', ');
+        }
+    }
+
+
+    #updateValueProperty() {
+        this.value = Array.from(this.#selectedValues).join(',');
+        this.setAttribute('value', this.value);
     }
 }
 
