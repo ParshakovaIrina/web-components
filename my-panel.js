@@ -1,10 +1,10 @@
 class MyPanel extends HTMLElement {
+    static observedAttributes = ["header", 'sub-header'];
+
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-    }
 
-    connectedCallback() {
         this.shadowRoot.innerHTML = `
             <style>
                 :host {
@@ -18,9 +18,24 @@ class MyPanel extends HTMLElement {
                     margin: 0 0 10px 0;
                 }
             </style>
-            <h3>Панель</h3>
+           <h2 id="main-header">Default header</h2>
+           <h3 id="sub-header"></h3>
             <slot></slot>
         `;
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'header') {
+            const headerEl = this.shadowRoot.querySelector('#main-header');
+            if (headerEl) {
+                headerEl.textContent = newValue || 'Default Header';
+            }
+        } else if (name === 'sub-header') {
+            const subHeaderEl = this.shadowRoot.querySelector('#sub-header');
+            if (subHeaderEl) {
+                subHeaderEl.textContent = newValue || '';
+            }
+        }
     }
 }
 
