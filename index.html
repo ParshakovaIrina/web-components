@@ -8,6 +8,20 @@
 <script>
     const onLoad = (evt)=>{
         const element = document.createElement('my-select');
+
+        const optionsData = [
+            { value: "opt1", text: "Option 1" },
+            { value: "opt2", text: "Option 2" },
+            { value: "opt3", text: "Option 3" },
+        ];
+
+        optionsData.forEach(opt => {
+            const optionEl = document.createElement('option');
+            optionEl.value = opt.value;
+            optionEl.textContent = opt.text;
+            element.appendChild(optionEl);
+        });
+
         document.body.appendChild(element);
     }
 
